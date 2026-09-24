@@ -1,0 +1,694 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/reportExtension/1.0.0/schema.json",
+  "name": "extension",
+  "entities": [
+    {
+      "name": "_Custom Measures",
+      "measures": [
+        {
+          "name": "Report Version",
+          "dataType": "Double",
+          "expression": "\"1.0.0\""
+        },
+        {
+          "name": "Display Blank",
+          "dataType": "Text",
+          "expression": "\"\""
+        },
+        {
+          "name": "Display Dataset Last Refresh",
+          "dataType": "Text",
+          "expression": "CONCATENATE(\"Dataset \",MAX(RefLastRefreshDate[LastRefresh]))"
+        },
+        {
+          "name": "Display Dataset Version",
+          "dataType": "Text",
+          "expression": "CONCATENATE(\"Dataset version: \",FORMAT(MAX(DatasetVersion[CurrentVersion]),\"Text\"))"
+        },
+        {
+          "name": "Display Report Version",
+          "dataType": "Text",
+          "expression": "CONCATENATE(\"Report Version: \",[Report Version])",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Report Version"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Go To About",
+          "dataType": "Text",
+          "expression": "\"About\""
+        },
+        {
+          "name": "_Custom FS Patient Retention Rate 3mo",
+          "dataType": "Double",
+          "expression": "CALCULATE([FS Patient Retention Rate],FILTER(DaysOffset,DaysOffset[Days]=3))",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "entity": "Financial Summary Measures",
+                "name": "FS Patient Retention Rate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "_Custom FS Patient Retention Rate 12mo",
+          "dataType": "Double",
+          "expression": "CALCULATE([FS Patient Retention Rate],FILTER(DaysOffset,DaysOffset[Days]=12))",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "entity": "Financial Summary Measures",
+                "name": "FS Patient Retention Rate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "_Custom Selected Dimension",
+          "dataType": "Text",
+          "expression": "BLANK() //SELECTEDVALUE('_Selection Dimensions'[_Selection Dimensions])"
+        },
+        {
+          "name": "_Custom Tooltip Rate of Change",
+          "dataType": "Text",
+          "expression": "\"Rate of Change (RoC) - The difference between the same period this year and last year.\""
+        },
+        {
+          "name": "_Custom FS Patient Churn Rate 12mo",
+          "dataType": "Double",
+          "expression": "CALCULATE([FS Patient Churn Rate],FILTER(DaysOffset,DaysOffset[Days]=12))",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "entity": "Financial Summary Measures",
+                "name": "FS Patient Churn Rate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "_Custom FS Patient Retention Rate",
+          "dataType": "Double",
+          "expression": "\r\nVAR __months = ABS(SELECTEDVALUE(DaysOffset[Days],3))*-1\r\nVAR __endDate = IF (MAX ( ServiceDateFrom[FullDate] ) > TODAY (), TODAY (), MAX ( ServiceDateFrom[FullDate] ))\r\nVAR __dateTable = DATESINPERIOD ( ServiceDateFrom[FullDate], __endDate, __months, MONTH )\r\nVAR __futureApptBegDate = MAXX ( __dateTable, [FullDate] )+1\r\nVAR __futureApptDateTable = DATESINPERIOD ( ServiceDateFrom[FullDate], __futureApptBegDate, 12, MONTH )\r\nVAR __patientList =\r\n    ADDCOLUMNS (\r\n        SUMMARIZECOLUMNS (\r\n            Patient[PatientKey],\r\n            \"__visits\",\r\n                CALCULATE (\r\n                    DISTINCTCOUNTNOBLANK ( FinancialSummary[UniqueVisitIdentifier] ),\r\n                    __dateTable\r\n                ),\r\n            \"__futureAppts\",\r\n                CALCULATE (\r\n                    COUNTROWS ( Appointments ),\r\n                    __futureApptDateTable\r\n                )\r\n        ),\r\n        \"__patientCount\",IF(ISBLANK([__visits]),0,1),\r\n        \"__returning\", IF ( [__visits] >= 2 || ([__visits] = 1 && [__futureAppts] >= 1), 1, 0 )\r\n    )\r\nRETURN\r\n    // DIVIDE(SUMX(__patientList,[__returning]),SUMX(__patientList,[__patientCount]))\r\n    __endDate\r\n"
+        },
+        {
+          "name": "_test",
+          "dataType": "Double",
+          "expression": "\nVAR __months = ABS(SELECTEDVALUE(DaysOffset[Days],3))*-1\nVAR __endDate = IF (MAX ( ServiceDateFrom[FullDate] ) > TODAY (), TODAY (), MAX ( ServiceDateFrom[FullDate] ))\nVAR __dateTable = DATESINPERIOD ( ServiceDateFrom[FullDate], __endDate, __months, MONTH )\nVAR __futureApptBegDate = MAXX ( __dateTable, [FullDate] )+1\nVAR __futureApptDateTable = DATESINPERIOD ( ServiceDateFrom[FullDate], __futureApptBegDate, 12, MONTH )\nVAR __patientList =\n    ADDCOLUMNS (\n        SUMMARIZECOLUMNS (\n            Patient[PatientKey],\n            \"__visits\",\n                CALCULATE (\n                    DISTINCTCOUNTNOBLANK ( FinancialSummary[UniqueVisitIdentifier] ),\n                    REMOVEFILTERS(ServiceDateFrom),\n                    __dateTable\n                ),\n            \"__futureAppts\",\n                CALCULATE (\n                    COUNTROWS ( Appointments ),\n                    __futureApptDateTable\n                )\n        ),\n        \"__patientCount\",IF(ISBLANK([__visits]),0,1),\n        \"__returning\", IF ( [__visits] >= 2 || ([__visits] = 1 && [__futureAppts] >= 1), 1, 0 )\n    )\nRETURN\n    // DIVIDE(SUMX(__patientList,[__returning]),SUMX(__patientList,[__patientCount]))\n    MAXX(__futureApptDateTable,[FullDate])"
+        },
+        {
+          "name": "PY Patients YTD",
+          "dataType": "Double",
+          "expression": "\nVAR _CurrentDate = TODAY()\n\nVAR _PYStart =\n    DATE(YEAR(_CurrentDate)-1,1,1)\n\nVAR _PYEnd =\n    DATE(\n        YEAR(_CurrentDate)-1,\n        MONTH(_CurrentDate),\n        DAY(_CurrentDate)\n    )\n\nRETURN\nCALCULATE(\n    DISTINCTCOUNT(FinancialSummary[PatientKey]),\n    FILTER(\n        ALL(ServiceDateFrom),\n        ServiceDateFrom[FullDate] >= _PYStart\n        &&\n        ServiceDateFrom[FullDate] <= _PYEnd\n    )\n)"
+        },
+        {
+          "name": "CY Patients YTD",
+          "dataType": "Double",
+          "expression": "\r\nVAR _CurrentDate = TODAY()\r\n\r\nVAR _CYStart =\r\n    DATE(YEAR(_CurrentDate),1,1)\r\n\r\nRETURN\r\nCALCULATE(\r\n    DISTINCTCOUNT(FinancialSummary[PatientKey]),\r\n    FILTER(\r\n        ALL(ServiceDateFrom),\r\n        ServiceDateFrom[FullDate] >= _CYStart\r\n        &&\r\n        ServiceDateFrom[FullDate] <= _CurrentDate\r\n    )\r\n)"
+        },
+        {
+          "name": "Patient Retention Rate",
+          "dataType": "Double",
+          "expression": "\r\nDIVIDE(\r\n    [Returned Patients],\r\n    [PY Patients YTD]\r\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Validation Check",
+          "dataType": "Double",
+          "expression": "\r\nIF(\r\n    [Returned Patients] + [Lost Patients]\r\n        =\r\n    [PY Patients YTD],\r\n    \"PASS\",\r\n    \"FAIL\"\r\n)",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Lost Patients"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Current YTD End Date",
+          "dataType": "Double",
+          "expression": "\r\nTODAY()"
+        },
+        {
+          "name": "Prior YTD End Date",
+          "dataType": "Double",
+          "expression": "\r\nDATE(\r\n    YEAR(TODAY()) - 1,\r\n    MONTH(TODAY()),\r\n    DAY(TODAY())\r\n)"
+        },
+        {
+          "name": "Returned Patients YTD",
+          "dataType": "Double",
+          "expression": "\nVAR _PYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(YEAR(TODAY())-1,1,1)\n                &&\n            ServiceDateFrom[FullDate] <= DATE(YEAR(TODAY())-1,MONTH(TODAY()),DAY(TODAY()))\n        )\n    )\n\nVAR _CYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(YEAR(TODAY()),1,1)\n                &&\n            ServiceDateFrom[FullDate] <= TODAY()\n        )\n    )\n\nRETURN\nCOUNTROWS(\n    INTERSECT(\n        _PYPatients,\n        _CYPatients\n    )\n)"
+        },
+        {
+          "name": "Patient Retention Rate YTD",
+          "dataType": "Double",
+          "expression": "\nDIVIDE(\n    [Returned Patients YTD],\n    [PY Patients YTD]\n)",
+          "formatString": "0.000\\ %;-0.000\\ %;0.000\\ %",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Patient Retention Rate PY YTD",
+          "dataType": "Double",
+          "expression": "\nVAR _CurrentDate = TODAY()\n\nVAR _PY2Patients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(YEAR(_CurrentDate)-2,1,1)\n                &&\n            ServiceDateFrom[FullDate] <= DATE(YEAR(_CurrentDate)-2,MONTH(_CurrentDate),DAY(_CurrentDate))\n        )\n    )\n\nVAR _PYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(YEAR(_CurrentDate)-1,1,1)\n                &&\n            ServiceDateFrom[FullDate] <= DATE(YEAR(_CurrentDate)-1,MONTH(_CurrentDate),DAY(_CurrentDate))\n        )\n    )\n\nVAR _Returned =\n    COUNTROWS(\n        INTERSECT(\n            _PY2Patients,\n            _PYPatients\n        )\n    )\n\nRETURN\nDIVIDE(\n    _Returned,\n    COUNTROWS(_PY2Patients)\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %"
+        },
+        {
+          "name": "Retention YoY Change",
+          "dataType": "Double",
+          "expression": "\n[Patient Retention Rate YTD]\n-\n[Patient Retention Rate PY YTD]",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate PY YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Retention KPI Display",
+          "dataType": "Double",
+          "expression": "\nVAR _CY = [Patient Retention Rate YTD]\nVAR _PY = [Patient Retention Rate PY YTD]\nVAR _Diff = _CY - _PY\n\nRETURN\n\"PY: \"\n& FORMAT(_PY,\"0.0%\")\n& UNICHAR(10)\n& IF(_Diff >= 0,\"▲ \",\"▼ \")\n& FORMAT(ABS(_Diff),\"0.0%\")",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate PY YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Returned Patients PY YTD",
+          "dataType": "Double",
+          "expression": "\nVAR _CurrentDate = TODAY()\n\nVAR _PY2Patients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(YEAR(_CurrentDate)-2,1,1)\n            &&\n            ServiceDateFrom[FullDate] <= DATE(YEAR(_CurrentDate)-2,MONTH(_CurrentDate),DAY(_CurrentDate))\n        )\n    )\n\nVAR _PYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(YEAR(_CurrentDate)-1,1,1)\n            &&\n            ServiceDateFrom[FullDate] <= DATE(YEAR(_CurrentDate)-1,MONTH(_CurrentDate),DAY(_CurrentDate))\n        )\n    )\n\nRETURN\nCOUNTROWS(\n    INTERSECT(\n        _PY2Patients,\n        _PYPatients\n    )\n)"
+        },
+        {
+          "name": "Returned Patients YoY %",
+          "dataType": "Double",
+          "expression": "\nDIVIDE(\n    [Returned Patients YTD] - [Returned Patients PY YTD],\n    [Returned Patients PY YTD]\n)",
+          "formatString": "0.0",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients PY YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Returned Patients Reference",
+          "dataType": "Double",
+          "expression": "\nVAR _PY = [Returned Patients PY YTD]\nVAR _YoY = [Returned Patients YoY %]\n\nRETURN\n\"PY: \"\n& FORMAT(_PY,\"#,0\")\n& UNICHAR(10)\n& IF(_YoY >= 0,\"▲ \",\"▼ \")\n& FORMAT(ABS(_YoY),\"0.0%\")",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients PY YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients YoY %"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Lost Patients YTD",
+          "dataType": "Double",
+          "expression": "\n[PY Patients YTD]\n-\n[Returned Patients YTD]",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PY2 Patients YTD",
+          "dataType": "Double",
+          "expression": "\r\nVAR _CurrentDate = TODAY()\r\n\r\nRETURN\r\nCALCULATE(\r\n    DISTINCTCOUNT(FinancialSummary[PatientKey]),\r\n    FILTER(\r\n        ALL(ServiceDateFrom),\r\n        ServiceDateFrom[FullDate] >= DATE(YEAR(_CurrentDate)-2,1,1)\r\n        &&\r\n        ServiceDateFrom[FullDate] <= DATE(\r\n            YEAR(_CurrentDate)-2,\r\n            MONTH(_CurrentDate),\r\n            DAY(_CurrentDate)\r\n        )\r\n    )\r\n)"
+        },
+        {
+          "name": "Lost Patients PY YTD",
+          "dataType": "Double",
+          "expression": "\n[PY2 Patients YTD]\n-\n[Returned Patients PY YTD]",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY2 Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Returned Patients PY YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Lost Patients YoY %",
+          "dataType": "Double",
+          "expression": "\nDIVIDE(\n    [Lost Patients YTD] - [Lost Patients PY YTD],\n    [Lost Patients PY YTD]\n)",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Lost Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Lost Patients PY YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Lost Patients Reference",
+          "dataType": "Double",
+          "expression": "\nVAR _PY = [Lost Patients PY YTD]\nVAR _YoY = [Lost Patients YoY %]\n\nRETURN\n\"PY: \"\n& FORMAT(_PY,\"#,0\")\n& UNICHAR(10)\n& IF(_YoY > 0,\"▼ \",\"▲ \")\n& FORMAT(ABS(_YoY),\"0.0%\")",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Lost Patients PY YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Lost Patients YoY %"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PY Patients YoY %",
+          "dataType": "Double",
+          "expression": "\r\nDIVIDE(\r\n    [PY Patients YTD] - [PY2 Patients YTD],\r\n    [PY2 Patients YTD]\r\n)",
+          "formatString": "0.0\\ %;-0.0\\ %;0.0\\ %",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY2 Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PY Patients Reference",
+          "dataType": "Double",
+          "expression": "\r\nVAR _PY2 = [PY2 Patients YTD]\r\nVAR _YoY = [PY Patients YoY %]\r\n\r\nRETURN\r\n\"PY: \"\r\n& FORMAT(_PY2,\"#,0\")\r\n& UNICHAR(10)\r\n& IF(_YoY >= 0,\"▲ \",\"▼ \")\r\n& FORMAT(ABS(_YoY),\"0.0%\")",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY2 Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YoY %"
+              }
+            ]
+          }
+        },
+        {
+          "name": "CY Patients YoY %",
+          "dataType": "Double",
+          "expression": "\r\nDIVIDE(\r\n    [CY Patients YTD] - [PY Patients YTD],\r\n    [PY Patients YTD]\r\n)",
+          "formatString": "0.0\\ %;-0.0\\ %;0.0\\ %",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "CY Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "CY Patients Reference",
+          "dataType": "Double",
+          "expression": "\r\nVAR _PY = [PY Patients YTD]\r\nVAR _YoY = [CY Patients YoY %]\r\n\r\nRETURN\r\n\"PY: \"\r\n& FORMAT(_PY,\"#,0\")\r\n& UNICHAR(10)\r\n& IF(_YoY >= 0,\"▲ \",\"▼ \")\r\n& FORMAT(ABS(_YoY),\"0.0%\")",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "CY Patients YoY %"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Retention Difference",
+          "dataType": "Double",
+          "expression": "\n[Patient Retention Rate YTD]\n-\n[Patient Retention Rate PY YTD]",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate PY YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Practice Retention Title",
+          "dataType": "Text",
+          "expression": "\n\"Practice Retention Comparison | \" &\nYEAR(TODAY()) & \" YTD vs \" &\nYEAR(TODAY())-1 & \" YTD\""
+        },
+        {
+          "name": "Show Current YTD Month",
+          "dataType": "Double",
+          "expression": "\nIF(\n    MAX(ServiceDateFrom[CalendarMonthNumber])\n        <= MONTH(TODAY()),\n    1,\n    0\n)"
+        },
+        {
+          "name": "Retention Trend CY",
+          "dataType": "Double",
+          "expression": "\nVAR _MonthNo =\n    SELECTEDVALUE(ServiceDateFrom[CalendarMonthNumber])\n\nVAR _CurrentYear =\n    YEAR(TODAY())\n\nVAR _CYEndDate =\n    IF(\n        VALUE(_MonthNo) = MONTH(TODAY()),\n        TODAY(),\n        EOMONTH(\n            DATE(_CurrentYear,VALUE(_MonthNo),1),\n            0\n        )\n    )\n\nVAR _PYEndDate =\n    DATE(\n        YEAR(_CYEndDate)-1,\n        MONTH(_CYEndDate),\n        DAY(_CYEndDate)\n    )\n\nVAR _PYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(_CurrentYear-1,1,1)\n            &&\n            ServiceDateFrom[FullDate] <= _PYEndDate\n        )\n    )\n\nVAR _CYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(_CurrentYear,1,1)\n            &&\n            ServiceDateFrom[FullDate] <= _CYEndDate\n        )\n    )\n\nRETURN\nDIVIDE(\n    COUNTROWS(INTERSECT(_PYPatients,_CYPatients)),\n    COUNTROWS(_PYPatients)\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %"
+        },
+        {
+          "name": "Show Month In Trend",
+          "dataType": "Double",
+          "expression": "\nVAR _MonthNo =\n    VALUE(MAX(ServiceDateFrom[CalendarMonthNumber]))\n\nRETURN\nIF(\n    _MonthNo <= MONTH(TODAY()),\n    1,\n    0\n)"
+        },
+        {
+          "name": "Retention Trend PY",
+          "dataType": "Double",
+          "expression": "\nVAR _MonthNo =\n    VALUE(SELECTEDVALUE(ServiceDateFrom[CalendarMonthNumber]))\n\nVAR _CurrentYear =\n    YEAR(TODAY())\n\nVAR _PYEndDate =\n    IF(\n        _MonthNo = MONTH(TODAY()),\n        DATE(\n            _CurrentYear-1,\n            MONTH(TODAY()),\n            DAY(TODAY())\n        ),\n        EOMONTH(\n            DATE(_CurrentYear-1,_MonthNo,1),\n            0\n        )\n    )\n\nVAR _PY2EndDate =\n    DATE(\n        YEAR(_PYEndDate)-1,\n        MONTH(_PYEndDate),\n        DAY(_PYEndDate)\n    )\n\nVAR _PY2Patients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(_CurrentYear-2,1,1)\n            &&\n            ServiceDateFrom[FullDate] <= _PY2EndDate\n        )\n    )\n\nVAR _PYPatients =\n    CALCULATETABLE(\n        DISTINCT(FinancialSummary[PatientKey]),\n        FILTER(\n            ALL(ServiceDateFrom),\n            ServiceDateFrom[FullDate] >= DATE(_CurrentYear-1,1,1)\n            &&\n            ServiceDateFrom[FullDate] <= _PYEndDate\n        )\n    )\n\nRETURN\nDIVIDE(\n    COUNTROWS(\n        INTERSECT(\n            _PY2Patients,\n            _PYPatients\n        )\n    ),\n    COUNTROWS(_PY2Patients)\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %"
+        },
+        {
+          "name": "Returned Lost Title",
+          "dataType": "Text",
+          "expression": "\n\"Returned vs Lost Patients (\" &\nYEAR(TODAY()) &\n\" YTD)\""
+        },
+        {
+          "name": "Provider Retention Title",
+          "dataType": "Text",
+          "expression": "\n\"Provider Retention Comparison (\" &\nYEAR(TODAY()) &\n\" YTD vs \" &\nYEAR(TODAY())-1 &\n\" YTD)\""
+        },
+        {
+          "name": "Patient Growth %",
+          "dataType": "Double",
+          "expression": "\nDIVIDE(\n    [CY Patients YTD] - [PY Patients YTD],\n    [PY Patients YTD]\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "CY Patients YTD"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "PY Patients YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Retention Growth Title",
+          "dataType": "Text",
+          "expression": "\n\"Practice Retention vs Growth Matrix (\" &\nYEAR(TODAY()) &\n\" YTD)\""
+        },
+        {
+          "name": "Practice Status",
+          "dataType": "Double",
+          "expression": "\nVAR _Growth = [Patient Growth %]\nVAR _Retention = [Patient Retention Rate YTD]\n\nRETURN\nSWITCH(\n    TRUE(),\n    _Growth > 0 && _Retention >= 0.40, \"Best Practice\",\n    _Growth <= 0 && _Retention >= 0.40, \"Stable\",\n    _Growth > 0 && _Retention < 0.40, \"Growth Risk\",\n    \"At Risk\"\n)",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Growth %"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Practice Status Score",
+          "dataType": "Double",
+          "expression": "\nVAR _Growth = [Patient Growth %]\nVAR _Retention = [Patient Retention Rate YTD]\n\nRETURN\nSWITCH(\n    TRUE(),\n    _Growth > 0 && _Retention >= 0.40, 4,   -- Best Practice\n    _Growth <= 0 && _Retention >= 0.40, 3,  -- Stable\n    _Growth > 0 && _Retention < 0.40, 2,    -- Growth Risk\n    1                                       -- At Risk\n)",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Growth %"
+              },
+              {
+                "schema": "extension",
+                "entity": "_Custom Measures",
+                "name": "Patient Retention Rate YTD"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Custom_FS Patient Retention Rate",
+          "dataType": "Double",
+          "expression": "\nVAR __n =\n    SUMX(\n        Appointments,\n        IF(\n            Appointments[IsROV_ActionTaken] = TRUE(),\n            1,\n            0\n        )\n    )\nVAR __d =\n    SUMX(\n        Appointments,\n        IF(\n            Appointments[IsROV_ActionExpected] = TRUE(),\n            1,\n            0\n        )\n    )\nRETURN\n    DIVIDE(__n, __d)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %"
+        }
+      ]
+    },
+    {
+      "name": "AR Aging Measures",
+      "measures": [
+        {
+          "name": "Retention Rate PY",
+          "dataType": "Double",
+          "expression": "\nCALCULATE(\n    [FS Patient Retention Rate],\n    SAMEPERIODLASTYEAR(ServiceDateFrom[FullDate])\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "entity": "Financial Summary Measures",
+                "name": "FS Patient Retention Rate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Retention Rate ROC PY",
+          "dataType": "Double",
+          "expression": "\nCALCULATE(\n    [FS Patient Retention Rate RoC],\n    SAMEPERIODLASTYEAR(ServiceDateFrom[FullDate])\n)",
+          "formatString": "0.00\\ %;-0.00\\ %;0.00\\ %",
+          "references": {
+            "measures": [
+              {
+                "entity": "Financial Summary Measures",
+                "name": "FS Patient Retention Rate RoC"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient",
+      "measures": [
+        {
+          "name": "Patients CY",
+          "dataType": "Double",
+          "expression": "\nDISTINCTCOUNT(Patient[MRN])"
+        },
+        {
+          "name": "Patients PY",
+          "dataType": "Double",
+          "expression": "\nCALCULATE(\n    DISTINCTCOUNT(Patient[MRN]),\n    SAMEPERIODLASTYEAR(ServiceDateFrom[FullDate])\n)"
+        },
+        {
+          "name": "Lost Patients",
+          "dataType": "Double",
+          "expression": "\n[Total Patients] - [Retained Patients]",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Total Patients"
+              },
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Retained Patients"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Retained Patients",
+          "dataType": "Double",
+          "expression": "\nCALCULATE(\n    DISTINCTCOUNT(Patient[MRN]),\n    Appointments[NewPatientFlag] = FALSE()\n)"
+        },
+        {
+          "name": "New Patients",
+          "dataType": "Double",
+          "expression": "\n[Patients CY] - [Retained Patients]",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Patients CY"
+              },
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Retained Patients"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Total Patients",
+          "dataType": "Double",
+          "expression": "\nDISTINCTCOUNT(Patient[MRN])"
+        },
+        {
+          "name": "Retained Patients LY",
+          "dataType": "Double",
+          "expression": "\nCALCULATE(\n    DISTINCTCOUNT(Patient[MRN]),\n    Appointments[NewPatientFlag] = FALSE(),\n    SAMEPERIODLASTYEAR(ServiceDateFrom[FullDate])\n)"
+        },
+        {
+          "name": "Lost Patients LY",
+          "dataType": "Double",
+          "expression": "\n[Patients PY] - [Retained Patients LY]",
+          "references": {
+            "measures": [
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Patients PY"
+              },
+              {
+                "schema": "extension",
+                "entity": "Patient",
+                "name": "Retained Patients LY"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Days Until Next Appointment",
+          "dataType": "Double",
+          "expression": "\nDATEDIFF(\n    TODAY(),\n    MAX(Patient[NextAppointmentDate]),\n    DAY\n)"
+        },
+        {
+          "name": "Days Since Last Appointment",
+          "dataType": "Double",
+          "expression": "\nDATEDIFF(\n    MAX(Patient[LastSeenDate]),\n    TODAY(),\n    DAY\n)"
+        }
+      ]
+    }
+  ]
+}
