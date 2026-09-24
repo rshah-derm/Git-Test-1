@@ -1,0 +1,145 @@
+EVALUATE
+SUMMARIZECOLUMNS(
+    'Location'[Region],
+    'Location'[Location Name],
+    'Provider'[Provider Name],
+    'ServiceDateFrom'[FirstDayOfWeek],
+    'ServiceDateFrom'[WeekOffset],
+
+    FILTER(
+        ALL('Location'[Location Name]),
+        'Location'[Location Name] =
+            "Skin and Beauty Center - Santa Clarita"
+    ),
+
+    FILTER(
+        ALL('Provider'[Provider Name]),
+        'Provider'[Provider Name] IN {
+            "Abowath, Aadil",
+            "Moran, Erica",
+            "Vadmal, Manjunath"
+        }
+    ),
+
+    "FS Patient Retention Rate",
+        VAR __n =
+            SUMX(
+                Appointments,
+                IF(
+                    Appointments[IsROV_ActionTaken] = TRUE(),
+                    1,
+                    0
+                )
+            )
+        VAR __d =
+            SUMX(
+                Appointments,
+                IF(
+                    Appointments[IsROV_ActionExpected] = TRUE(),
+                    1,
+                    0
+                )
+            )
+        RETURN
+            DIVIDE(__n, __d),
+
+    "ReturningPatientCount",
+        VAR __months =
+            ABS(SELECTEDVALUE(DaysOffset[Days], 3)) * -1
+        VAR __endDate =
+            IF(
+                MAX(ServiceDateFrom[FullDate]) > TODAY(),
+                TODAY(),
+                MAX(ServiceDateFrom[FullDate])
+            )
+        VAR __dateTable =
+            DATESINPERIOD(
+                ServiceDateFrom[FullDate],
+                __endDate,
+                __months,
+                MONTH
+            )
+        VAR __futureApptBegDate =
+            MAXX(__dateTable, [FullDate]) + 1
+        VAR __futureApptDateTable =
+            DATESINPERIOD(
+                ServiceDateFrom[FullDate],
+                __futureApptBegDate,
+                12,
+                MONTH
+            )
+        VAR __patientList =
+            ADDCOLUMNS(
+                SUMMARIZECOLUMNS(
+                    Patient[PatientKey],
+                    "__visits",
+                        CALCULATE(
+                            DISTINCTCOUNTNOBLANK(
+                                FinancialSummary[UniqueVisitIdentifier]
+                            ),
+                            __dateTable
+                        ),
+                    "__futureAppts",
+                        CALCULATE(
+                            COUNTROWS(Appointments),
+                            __futureApptDateTable
+                        )
+                ),
+                "__returning",
+                    IF(
+                        [__visits] >= 2
+                            || (
+                                [__visits] = 1
+                                    && [__futureAppts] >= 1
+                            ),
+                        1,
+                        0
+                    )
+            )
+        RETURN
+            SUMX(__patientList, [__returning]),
+
+    "TotalPatientCount",
+        VAR __months2 =
+            ABS(SELECTEDVALUE(DaysOffset[Days], 3)) * -1
+        VAR __endDate2 =
+            IF(
+                MAX(ServiceDateFrom[FullDate]) > TODAY(),
+                TODAY(),
+                MAX(ServiceDateFrom[FullDate])
+            )
+        VAR __dateTable2 =
+            DATESINPERIOD(
+                ServiceDateFrom[FullDate],
+                __endDate2,
+                __months2,
+                MONTH
+            )
+        VAR __patientList2 =
+            ADDCOLUMNS(
+                SUMMARIZECOLUMNS(
+                    Patient[PatientKey],
+                    "__visits",
+                        CALCULATE(
+                            DISTINCTCOUNTNOBLANK(
+                                FinancialSummary[UniqueVisitIdentifier]
+                            ),
+                            __dateTable2
+                        )
+                ),
+                "__patientCount",
+                    IF(
+                        ISBLANK([__visits]),
+                        0,
+                        1
+                    )
+            )
+        RETURN
+            SUMX(__patientList2, [__patientCount])
+)
+
+ORDER BY
+    'Location'[Region],
+    'Location'[Location Name],
+    'Provider'[Provider Name],
+    'ServiceDateFrom'[FirstDayOfWeek]

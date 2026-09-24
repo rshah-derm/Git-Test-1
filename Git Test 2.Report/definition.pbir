@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definitionProperties/2.0.0/schema.json",
+  "version": "4.0",
+  "datasetReference": {
+    "byConnection": {
+      "connectionString": "Data Source=\"powerbi://api.powerbi.com/v1.0/myorg/Focus UAT\";initial catalog=\"HDP dataset\";access mode=readonly;integrated security=ClaimsToken;semanticmodelid=e54c04f9-20aa-4463-aa2d-b4bb0055223c"
+    }
+  }
+}

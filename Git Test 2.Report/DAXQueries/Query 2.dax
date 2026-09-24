@@ -1,0 +1,14 @@
+EVALUATE
+SUMMARIZECOLUMNS(
+    'Location'[Location Name],
+    'Provider'[Provider Name],
+    'ServiceDateFrom'[FirstDayOfWeek],
+    'ServiceDateFrom'[CalendarYear],
+    FILTER('ServiceDateFrom', 'ServiceDateFrom'[CalendarYear] = 2025),
+    FILTER('Location', 'Location'[Location Name] = "California Lab"),
+    "FS Patient Retention Rate", [FS Patient Retention Rate]
+)
+ORDER BY
+    'Location'[Location Name],
+    'Provider'[Provider Name],
+    'ServiceDateFrom'[FirstDayOfWeek]
